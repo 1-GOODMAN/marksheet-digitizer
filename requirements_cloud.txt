@@ -1,0 +1,22 @@
+# Core Cloud & Web Backend Dependencies
+fastapi>=0.110.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.10
+jinja2>=3.1.0
+boto3>=1.34.0
+requests>=2.31.0
+
+# Computer Vision, Neural OCR & Symbolic Solver
+opencv-python>=4.8.0
+numpy>=1.24.0
+pillow>=10.0.0
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.35.0
+z3-solver>=4.12.0
+
+# Data & Spreadsheet Export
+pandas>=2.0.0
+openpyxl>=3.1.0
+protobuf>=4.25.0
+streamlit>=1.30.0
