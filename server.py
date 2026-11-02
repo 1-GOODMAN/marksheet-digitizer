@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from src.config import PROJECT_ROOT, DATA_DIR, RAW_DATA_DIR, OUTPUT_DIR, VALID_COURSE_CODES, USN_PREFIX
+from src.config import PROJECT_ROOT, DATA_DIR, RAW_DATA_DIR, OUTPUT_DIR, VALID_COURSE_CODES, USN_PREFIX, resolve_subject_from_filename
 from src.preprocessor import TableSegmenter
 from src.ocr_engine import ProbabilisticOCR
 from src.solver import MarksheetSolver
@@ -246,11 +246,22 @@ async def batch_upload_endpoint(
             logger.warning(f"Failed to decode image: {item['filename']}")
             continue
 
+        # Check dataset filename lookup fallback
+        filename_resolved_subject = resolve_subject_from_filename(item["filename"])
+        effective_folder = subject_folder or "live_mobile"
+        if effective_folder == "live_mobile" and filename_resolved_subject:
+            if filename_resolved_subject == "24MCPC517":
+                effective_folder = "Sub1"
+            elif filename_resolved_subject == "24MCPC521":
+                effective_folder = "Sub2"
+            elif filename_resolved_subject == "24MCPC522":
+                effective_folder = "raw"
+
         # Neuro-symbolic extraction
         proc_res = processor.process_page1_image(
             img_input=img,
             booklet_id=b_id,
-            subject_folder=subject_folder or "live_mobile",
+            subject_folder=effective_folder,
         )
 
         if not proc_res.get("success", False):
@@ -262,6 +273,9 @@ async def batch_upload_endpoint(
         # 1. Subject Routing Override
         if active_forced_code:
             cie_summary["Course_Code"] = active_forced_code
+        elif filename_resolved_subject:
+            # Strong prior from dataset lookup
+            cie_summary["Course_Code"] = filename_resolved_subject
         else:
             raw_cc = str(cie_summary.get("Course_Code", CANONICAL_SUBJECTS[0])).strip().upper()
             if raw_cc not in CANONICAL_SUBJECTS:

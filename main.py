@@ -15,26 +15,38 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 from src.pipeline import BatchProcessor
-from src.config import OUTPUT_DIR, DATA_DIR, SUBJECT_DIRS, VALID_COURSE_CODES
+from src.config import OUTPUT_DIR, DATA_DIR, VALID_COURSE_CODES, discover_subject_dirs
 
 
 # ---------------------------------------------------------------------------
 # Excel Export
 # ---------------------------------------------------------------------------
 
-def _save_excel(records: list, out_path: str) -> None:
+def _save_excel(records: list, out_path: str, purge_invalid: bool = True) -> None:
     """
     Writes the multi-sheet Excel audit report.
+    Applies strict purge filter: drops records with Course_Code == '24MCPC517'
+    and any decimal-containing rows before generating the final Excel workbook.
 
     Sheet layout:
-      CIE_Summary   — all records from all subject folders
+      CIE_Summary   — all records from valid subject folders
       raw           — records from data/raw only
-      Sub1          — records from data/Sub1 only
       Sub2          — records from data/Sub2 only
-      <course_code> — one sheet per valid course code (e.g. 24MCPC522)
+      <course_code> — one sheet per valid course code (e.g. 24MCPC522, 24MCPC521)
     """
     if not records:
         print("  [WARN] No records to export.")
+        return
+
+    # Apply strict purge filter if enabled
+    if purge_invalid:
+        records_to_export, purge_stats = BatchProcessor.purge_invalid_export_records(records)
+        print(f"  [Purge Filter] Input: {purge_stats['total_in']} | Dropped 24MCPC517: {purge_stats['dropped_517']} | Dropped Decimals: {purge_stats['dropped_decimal']} | Exporting: {purge_stats['passed']}")
+    else:
+        records_to_export = records
+
+    if not records_to_export:
+        print("  [WARN] All records were filtered out by export purge filter.")
         return
 
     cie_columns = [
@@ -44,7 +56,7 @@ def _save_excel(records: list, out_path: str) -> None:
         "Status", "Solver_Overrides",
     ]
 
-    df_all = pd.DataFrame(records)
+    df_all = pd.DataFrame(records_to_export)
     available_cols = [c for c in cie_columns if c in df_all.columns]
     df_all = df_all[available_cols]
 
@@ -55,10 +67,16 @@ def _save_excel(records: list, out_path: str) -> None:
         # Master sheet
         df_all.to_excel(writer, sheet_name="CIE_Summary", index=False)
 
-        # Per-subject-folder sheets
-        for subdir in SUBJECT_DIRS:
-            subset = df_all[df_all["Subject_Folder"] == subdir] if "Subject_Folder" in df_all.columns else pd.DataFrame()
-            sheet_name = subdir[:31]  # Excel sheet name max 31 chars
+        # Per-subject-folder sheets (dynamically discovered from processed records)
+        subject_folders = []
+        if "Subject_Folder" in df_all.columns:
+            for s in df_all["Subject_Folder"].dropna().unique():
+                if s and str(s) not in subject_folders:
+                    subject_folders.append(str(s))
+
+        for subdir in subject_folders:
+            subset = df_all[df_all["Subject_Folder"] == subdir]
+            sheet_name = str(subdir)[:31]  # Excel sheet name max 31 chars
             if not subset.empty:
                 subset.to_excel(writer, sheet_name=sheet_name, index=False)
 
@@ -107,8 +125,8 @@ def parse_args():
     parser.add_argument(
         "--subjects",
         nargs="*",
-        default=SUBJECT_DIRS,
-        help=f"Subject folders to process (default: {SUBJECT_DIRS})",
+        default=None,
+        help="Subject folders to process (default: all folders in data/ containing images)",
     )
     parser.add_argument(
         "--limit",
@@ -136,9 +154,14 @@ def main():
     print("  Marksheet Digitizer — Page-1-Only Neuro-Symbolic Batch Pipeline")
     print("=" * 90)
 
+    discovered = discover_subject_dirs(DATA_DIR)
+    subjects_to_process = args.subjects if args.subjects is not None else discovered
+    if not subjects_to_process:
+        subjects_to_process = [d for d in ["raw", "Sub1", "Sub2", "Sub3"] if (DATA_DIR / d).exists()]
+
     processor = BatchProcessor()
     print(f"  Hardware device : {processor.ocr.device}")
-    print(f"  Subject folders : {args.subjects}")
+    print(f"  Subject folders : {subjects_to_process}")
     print(f"  Output path     : {args.output}")
     print("-" * 90)
 
@@ -146,7 +169,7 @@ def main():
     global_status_counts = {"VALIDATED": 0, "AUTO_CORRECTED": 0, "MANUAL_REVIEW_REQUIRED": 0}
     grand_start = time.time()
 
-    for subject_folder in args.subjects:
+    for subject_folder in subjects_to_process:
         images = processor._discover_subject_images(subject_folder)
         if not images:
             print(f"  [SKIP] {subject_folder}: no images found in {DATA_DIR / subject_folder}")

@@ -62,38 +62,38 @@ class MarksheetSolver:
 
         # --- 0. Algebraic Candidate Inference ---
         # A. Theory breakdown: test1 + test2 + aba == theory_total
-        th_cands = [val for val, p in dists.get("theory_total", {}).items() if 18 <= val <= 40 and p >= 0.35]
-        t1_cands = [val for val, p in dists.get("test1", {}).items() if 1 <= val <= 15 and p >= 0.40]
-        t2_cands = [val for val, p in dists.get("test2", {}).items() if 1 <= val <= 15 and p >= 0.40]
-        aba_cands = [val for val, p in dists.get("aba", {}).items() if 1 <= val <= 10 and p >= 0.40]
+        th_cands = [val for val, p in dists.get("theory_total", {}).items() if 18 <= val <= 50 and p >= 0.35]
+        t1_cands = [val for val, p in dists.get("test1", {}).items() if 1 <= val <= 25 and p >= 0.35]
+        t2_cands = [val for val, p in dists.get("test2", {}).items() if 1 <= val <= 25 and p >= 0.35]
+        aba_cands = [val for val, p in dists.get("aba", {}).items() if 1 <= val <= 25 and p >= 0.35]
 
         for th_v in th_cands:
             # Case 1: test1 & aba known -> infer test2
             for t1_v in t1_cands:
                 for aba_v in aba_cands:
                     inferred_t2 = th_v - t1_v - aba_v
-                    if 0 <= inferred_t2 <= 15:
+                    if 0 <= inferred_t2 <= 25:
                         dists.setdefault("test2", {})
                         dists["test2"][inferred_t2] = max(dists["test2"].get(inferred_t2, 0.0), 0.75)
             # Case 2: test2 & aba known -> infer test1
             for t2_v in t2_cands:
                 for aba_v in aba_cands:
                     inferred_t1 = th_v - t2_v - aba_v
-                    if 0 <= inferred_t1 <= 15:
+                    if 0 <= inferred_t1 <= 25:
                         dists.setdefault("test1", {})
                         dists["test1"][inferred_t1] = max(dists["test1"].get(inferred_t1, 0.0), 0.75)
-            # Case 3: test1 & test2 known -> infer aba
+            # Case 3: test1 & test2 known -> infer aba (supports 2-ABA sums up to 25)
             for t1_v in t1_cands:
                 for t2_v in t2_cands:
                     inferred_aba = th_v - t1_v - t2_v
-                    if 0 <= inferred_aba <= 10:
+                    if 0 <= inferred_aba <= 25:
                         dists.setdefault("aba", {})
-                        dists["aba"][inferred_aba] = max(dists["aba"].get(inferred_aba, 0.0), 0.75)
+                        dists["aba"][inferred_aba] = max(dists["aba"].get(inferred_aba, 0.0), 0.85)
 
         # B. Practical breakdown: viva + lab == pract_total
-        pr_cands = [val for val, p in dists.get("pract_total", {}).items() if 5 <= val <= 10 and p >= 0.40]
-        viva_cands = [val for val, p in dists.get("viva", {}).items() if 1 <= val <= 5 and p >= 0.40]
-        lab_cands = [val for val, p in dists.get("lab", {}).items() if 1 <= val <= 5 and p >= 0.40]
+        pr_cands = [val for val, p in dists.get("pract_total", {}).items() if 0 <= val <= 15 and p >= 0.35]
+        viva_cands = [val for val, p in dists.get("viva", {}).items() if 0 <= val <= 5 and p >= 0.35]
+        lab_cands = [val for val, p in dists.get("lab", {}).items() if 0 <= val <= 5 and p >= 0.35]
 
         for pr_v in pr_cands:
             for l_v in lab_cands:
@@ -108,13 +108,30 @@ class MarksheetSolver:
                     dists["lab"][inferred_l] = max(dists["lab"].get(inferred_l, 0.0), 0.75)
 
         # C. Total CIE reconciliation: theory_total + pract_total == cie_total
-        cie_cands = [val for val, p in dists.get("cie_total", {}).items() if 20 <= val <= 50 and p >= 0.40]
+        cie_cands = [val for val, p in dists.get("cie_total", {}).items() if 20 <= val <= 50 and p >= 0.35]
         for cie_v in cie_cands:
-            for pr_v in pr_cands:
-                inferred_th = cie_v - pr_v
-                if 0 <= inferred_th <= 40:
+            # If practical candidates exist, reconcile with them
+            if pr_cands:
+                for pr_v in pr_cands:
+                    inferred_th = cie_v - pr_v
+                    if 0 <= inferred_th <= 50:
+                        dists.setdefault("theory_total", {})
+                        dists["theory_total"][inferred_th] = max(dists["theory_total"].get(inferred_th, 0.0), 0.85)
+            else:
+                # Default practical to 0 if not present
+                inferred_th = cie_v
+                if 0 <= inferred_th <= 50:
                     dists.setdefault("theory_total", {})
                     dists["theory_total"][inferred_th] = max(dists["theory_total"].get(inferred_th, 0.0), 0.85)
+
+            # If theory total (or cie - pract) is known and test1 & test2 are known, infer aba
+            eff_th = cie_v - (pr_cands[0] if pr_cands else 0)
+            for t1_v in t1_cands:
+                for t2_v in t2_cands:
+                    inferred_aba = eff_th - t1_v - t2_v
+                    if 0 <= inferred_aba <= 25:
+                        dists.setdefault("aba", {})
+                        dists["aba"][inferred_aba] = max(dists["aba"].get(inferred_aba, 0.0), 0.90)
 
         # --- 1. Declare Z3 integer variables ---
         t1   = z3.Int("test1")
@@ -137,14 +154,14 @@ class MarksheetSolver:
             "cie_total":    cie,
         }
 
-        # --- 2. Domain bounds ---
-        opt.add(t1  >= 0, t1  <= 15)
-        opt.add(t2  >= 0, t2  <= 15)
-        opt.add(aba >= 0, aba <= 10)
-        opt.add(th  >= 0, th  <= 40)
+        # --- 2. Domain bounds (supports both 1-ABA and 2-ABA booklets) ---
+        opt.add(t1  >= 0, t1  <= 25)
+        opt.add(t2  >= 0, t2  <= 25)
+        opt.add(aba >= 0, aba <= 25)
+        opt.add(th  >= 0, th  <= 50)
         opt.add(viva >= 0, viva <= 5)
         opt.add(lab  >= 0, lab  <= 5)
-        opt.add(pr  >= 0, pr  <= 10)
+        opt.add(pr  >= 0, pr  <= 15)
         opt.add(cie >= 0, cie <= 50)
 
         # --- 3. Hard arithmetic constraints (Page 1 CIE table) ---
@@ -175,9 +192,9 @@ class MarksheetSolver:
                 weight = max(1, int((log_p - min_log_p) * scale_factor))
 
                 # Fix 3.1: 3.0x Confidence Multiplier for two-digit summary totals
-                if var_name == "cie_total" and 25 <= val <= 50 and p >= 0.40:
+                if var_name == "cie_total" and 20 <= val <= 50 and p >= 0.35:
                     weight = int(weight * 3.5)
-                elif var_name == "theory_total" and 18 <= val <= 40 and p >= 0.40:
+                elif var_name == "theory_total" and 18 <= val <= 50 and p >= 0.35:
                     weight = int(weight * 3.0)
 
                 # Fix 3.2: Penalize value 0 strongly on inked cells
@@ -186,6 +203,14 @@ class MarksheetSolver:
                         weight = max(1, int(weight * 0.08))
 
                 opt.add_soft(z_var == val, weight=weight)
+
+        # Safeguard Against Incorrect Total Downgrades:
+        # If visual OCR on cie_total reads a high-confidence two-digit number (>= 20, p >= 0.65),
+        # anchor it with heavy weight so cell miscrops do not drag the total down!
+        cie_high_cands = [val for val, p in dists.get("cie_total", {}).items() if 20 <= val <= 50 and p >= 0.65]
+        if cie_high_cands:
+            best_cie_anchor = max(cie_high_cands)
+            opt.add_soft(cie == best_cie_anchor, weight=50000)
 
         # --- 6. Solve and extract ---
         check_res = opt.check()
@@ -212,8 +237,20 @@ class MarksheetSolver:
                 p = max(dist[resolved[var_name]] / total_p, 1e-6)
                 total_ll += float(np.log(p))
 
+        # Detect if auto-correction / safeguard inference was applied
+        is_auto_corrected = False
+        warning_msg = None
+        for var_name, dist in candidate_distributions.items():
+            if var_name in resolved and dist:
+                top_cand = max(dist, key=dist.get)
+                if resolved[var_name] != top_cand and dist.get(top_cand, 0.0) >= 0.40:
+                    is_auto_corrected = True
+                    warning_msg = f"AUTO_CORRECTED: Inferred {var_name}={resolved[var_name]} (raw top-1 was {top_cand}) to preserve valid totals"
+
         return {
             "success": True,
             "values": resolved,
             "log_likelihood": total_ll,
+            "auto_corrected": is_auto_corrected,
+            "warning": warning_msg,
         }

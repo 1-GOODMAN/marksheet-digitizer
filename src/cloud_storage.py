@@ -29,12 +29,11 @@ from .config import PROJECT_ROOT, DATA_DIR, VALID_COURSE_CODES, USN_PREFIX
 logger = logging.getLogger(__name__)
 
 # Canonical subjects handled by the MITE Marksheet Digitizer
-CANONICAL_SUBJECTS = list(VALID_COURSE_CODES)  # ["24MCPC522", "24MCPC517", "24MCPC521"]
+CANONICAL_SUBJECTS = list(VALID_COURSE_CODES)  # ["24MCPC522", "24MCPC521"]
 
 SUBJECT_TITLES = {
-    "24MCPC522": "Cloud Computing & Distributed Systems",
-    "24MCPC517": "Machine Learning & Pattern Recognition",
-    "24MCPC521": "Advanced Network Security & Cryptography",
+    "24MCPC522": "Programming in Java",
+    "24MCPC521": "Design & Analysis of Algorithms",
 }
 
 COLUMN_SPECS = [

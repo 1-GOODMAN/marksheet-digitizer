@@ -2,391 +2,259 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Marksheet Digitizer | Continuous Smartphone Batch-Scanner &amp; Subject Router</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MITE - CIE Marksheet Digitizer</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f5f6f8;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #333333;
+    }
+    .header-bar {
+      background-color: #1e3a8a;
+      color: #ffffff;
+      padding: 16px 0;
+      border-bottom: 3px solid #172554;
+    }
+    .card {
+      background-color: #ffffff;
+      border: 1px solid #dcdcdc;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .card-header {
+      background-color: #fafafa;
+      border-bottom: 1px solid #e5e5e5;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    .btn-primary {
+      background-color: #1e3a8a;
+      border-color: #1e3a8a;
+    }
+    .btn-primary:hover {
+      background-color: #172554;
+      border-color: #172554;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Top Navigation Header -->
-  <header class="navbar">
-    <div class="brand">
-      <div class="brand-icon">⚡</div>
-      <div>
-        <h1>Marksheet Digitizer Cloud</h1>
-        <p>Continuous Mobile Batch-Scan • Automated Subject Routing • Z3 Presburger Solver</p>
+  <!-- Top Academic Header -->
+  <header class="header-bar">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h4 class="mb-1 fw-bold">MITE - CIE Marksheet Digitizer</h4>
+          <p class="mb-0 text-white-50 small">Department of MCA | Automated Booklet Marks Extraction System</p>
+        </div>
+        <div class="col-md-4 text-md-end text-white-50 small mt-2 mt-md-0">
+          <span>Academic Year 2026-27</span>
+        </div>
       </div>
-    </div>
-    <div class="status-pills">
-      <div class="pill"><span class="pill-dot"></span><span id="devicePill">Device: CPU</span></div>
-      <div class="pill"><span id="cloudPill">Vault: LOCAL</span></div>
-      <div class="pill"><span id="countPill">0 Booklets Logged</span></div>
     </div>
   </header>
 
-  <!-- Subject Lock Override Strip -->
-  <nav class="subject-lock-bar">
-    <div class="subject-lock-inner">
-      <span class="subject-lock-title">🎯 Subject Routing Mode:</span>
-      <div class="subject-lock-pills" id="subjectLockPills">
-        <button class="lock-pill active" data-code="" id="pillAuto">
-          <span class="pill-indicator"></span>
-          Auto-Detect Subject (Default)
-        </button>
-        <button class="lock-pill" data-code="24MCPC522" id="pill522">
-          <span class="pill-indicator"></span>
-          Force 24MCPC522
-        </button>
-        <button class="lock-pill" data-code="24MCPC517" id="pill517">
-          <span class="pill-indicator"></span>
-          Force 24MCPC517
-        </button>
-        <button class="lock-pill" data-code="24MCPC521" id="pill521">
-          <span class="pill-indicator"></span>
-          Force 24MCPC521
-        </button>
+  <!-- Main Content Container -->
+  <main class="container py-4" style="max-width: 860px;">
+
+    <!-- Upload Card -->
+    <div class="card mb-4">
+      <div class="card-header py-3">
+        Upload Booklet Scans
+      </div>
+      <div class="card-body p-4">
+        <form id="uploadForm">
+          <div class="row g-3">
+            <!-- Subject Dropdown -->
+            <div class="col-12">
+              <label for="subjectHint" class="form-label fw-semibold small">Subject / Course Code:</label>
+              <select id="subjectHint" class="form-select">
+                <option value="auto" selected>Auto-Detect from Booklet</option>
+                <option value="24MCPC522">24MCPC522 - Programming in Java</option>
+                <option value="24MCPC521">24MCPC521 - Design &amp; Analysis of Algorithms</option>
+              </select>
+            </div>
+
+            <!-- Single / Multi File Input -->
+            <div class="col-md-6">
+              <label for="fileInput" class="form-label fw-semibold small">Upload Booklet Images:</label>
+              <input type="file" id="fileInput" class="form-control" multiple accept="image/*,.jpg,.jpeg,.png" />
+              <div class="form-text small">Select one or multiple Page-1 images (.jpg, .png).</div>
+            </div>
+
+            <!-- Folder Input -->
+            <div class="col-md-6">
+              <label for="folderInput" class="form-label fw-semibold small">Upload Folder:</label>
+              <input type="file" id="folderInput" class="form-control" webkitdirectory directory multiple />
+              <div class="form-text small">Select an entire directory of booklet scans. Page-2 scans are skipped automatically.</div>
+            </div>
+          </div>
+
+          <!-- Selected Files Note & Submit Button -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 pt-3 border-top">
+            <div id="fileSelectionText" class="small text-muted">
+              No files selected yet.
+            </div>
+            <div>
+              <button type="button" id="btnExtract" class="btn btn-primary px-4 fw-semibold" disabled>
+                Extract Marks
+              </button>
+            </div>
+          </div>
+
+          <!-- Real-Time Progress Bar Container (Hidden by default) -->
+          <div id="progressSection" class="mt-4 pt-3 border-top d-none">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span id="progressText" class="small fw-semibold text-secondary">Processing booklet 0 of 0 (0%)...</span>
+              <span id="progressPctLabel" class="small fw-bold text-primary">0%</span>
+            </div>
+            <div class="progress" style="height: 12px; background-color: #e9ecef; border-radius: 4px;">
+              <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%; background-color: #1e3a8a; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Completion State (Reveals Download Button when 100% reached) -->
+          <div id="completionSection" class="mt-4 pt-3 border-top d-none">
+            <div class="alert alert-success d-flex flex-wrap align-items-center justify-content-between mb-0 p-3" role="alert">
+              <div>
+                <strong class="d-block mb-1">Completed!</strong>
+                <span id="completionText" class="small text-muted">Successfully processed 0 booklet(s).</span>
+              </div>
+              <div>
+                <a href="/api/download-excel" id="btnDownload" class="btn btn-success fw-semibold px-4 py-2">
+                  Download Excel (.xlsx)
+                </a>
+              </div>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
-  </nav>
-
-  <!-- Main Container -->
-  <main class="container">
-
-    <!-- SECTION 1: Subject-Wise Command Center (3 Subject Cards + Master Download) -->
-    <section class="section-card">
-      <div class="section-header-flex">
-        <div>
-          <h2 class="section-title">📊 Subject-Wise Ledgers &amp; Analytics</h2>
-          <p class="section-subtitle">Real-time student tallies, average CIE marks, and automated USN-sorted exports.</p>
-        </div>
-        <div>
-          <a href="/api/booklets/download-master" class="btn btn-master-download" id="btnDownloadMaster" download="master_all_subjects_marksheet.xlsx">
-            <span>⬇️</span>
-            <span>Download Master All-Subjects Workbook (.xlsx)</span>
-            <span class="badge-mini">4 Sheets</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="subjects-grid">
-        <!-- Subject Card 1: 24MCPC522 -->
-        <div class="subject-card" id="card-24MCPC522">
-          <div class="subject-card-header">
-            <div>
-              <span class="subject-code-tag">24MCPC522</span>
-              <h3 class="subject-title">Cloud Computing &amp; Systems</h3>
-            </div>
-            <span class="status-indicator-badge live">LIVE</span>
-          </div>
-
-          <div class="subject-metrics">
-            <div class="metric-item">
-              <span class="metric-label">Students Digitized</span>
-              <span class="metric-val" id="cnt-24MCPC522">0</span>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">Average CIE</span>
-              <span class="metric-val highlight" id="avg-24MCPC522">0.0<small style="font-size:0.75rem;color:#94a3b8;">/50</small></span>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">Z3 Auto-Corrected</span>
-              <span class="metric-val warning" id="cor-24MCPC522">0</span>
-            </div>
-          </div>
-
-          <div class="subject-card-actions">
-            <a href="/api/subjects/24MCPC522/download" class="btn btn-subject-download" download="24MCPC522_marksheet.xlsx">
-              ⬇️ Download 24MCPC522.xlsx
-            </a>
-          </div>
-        </div>
-
-        <!-- Subject Card 2: 24MCPC517 -->
-        <div class="subject-card" id="card-24MCPC517">
-          <div class="subject-card-header">
-            <div>
-              <span class="subject-code-tag purple">24MCPC517</span>
-              <h3 class="subject-title">Machine Learning &amp; Vision</h3>
-            </div>
-            <span class="status-indicator-badge live">LIVE</span>
-          </div>
-
-          <div class="subject-metrics">
-            <div class="metric-item">
-              <span class="metric-label">Students Digitized</span>
-              <span class="metric-val" id="cnt-24MCPC517">0</span>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">Average CIE</span>
-              <span class="metric-val highlight" id="avg-24MCPC517">0.0<small style="font-size:0.75rem;color:#94a3b8;">/50</small></span>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">Z3 Auto-Corrected</span>
-              <span class="metric-val warning" id="cor-24MCPC517">0</span>
-            </div>
-          </div>
-
-          <div class="subject-card-actions">
-            <a href="/api/subjects/24MCPC517/download" class="btn btn-subject-download" download="24MCPC517_marksheet.xlsx">
-              ⬇️ Download 24MCPC517.xlsx
-            </a>
-          </div>
-        </div>
-
-        <!-- Subject Card 3: 24MCPC521 -->
-        <div class="subject-card" id="card-24MCPC521">
-          <div class="subject-card-header">
-            <div>
-              <span class="subject-code-tag amber">24MCPC521</span>
-              <h3 class="subject-title">Network Security &amp; Crypto</h3>
-            </div>
-            <span class="status-indicator-badge live">LIVE</span>
-          </div>
-
-          <div class="subject-metrics">
-            <div class="metric-item">
-              <span class="metric-label">Students Digitized</span>
-              <span class="metric-val" id="cnt-24MCPC521">0</span>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">Average CIE</span>
-              <span class="metric-val highlight" id="avg-24MCPC521">0.0<small style="font-size:0.75rem;color:#94a3b8;">/50</small></span>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">Z3 Auto-Corrected</span>
-              <span class="metric-val warning" id="cor-24MCPC521">0</span>
-            </div>
-          </div>
-
-          <div class="subject-card-actions">
-            <a href="/api/subjects/24MCPC521/download" class="btn btn-subject-download" download="24MCPC521_marksheet.xlsx">
-              ⬇️ Download 24MCPC521.xlsx
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 2: Continuous Smartphone Batch Capture Station -->
-    <section class="section-card">
-      <div class="section-header-flex">
-        <div>
-          <h2 class="section-title">📱 Smartphone "Rapid Batch Capture"</h2>
-          <p class="section-subtitle">Click photos of 10, 20, or 50 booklets consecutively without waiting for OCR passes.</p>
-        </div>
-        <div class="batch-counter-tag">
-          <span>Session Snaps:</span>
-          <strong id="sessionSnapCount">0</strong>
-        </div>
-      </div>
-
-      <!-- Capture Mode Switcher -->
-      <div class="mode-tabs">
-        <button class="mode-tab active" data-mode="camera" id="tabCamera">
-          📷 Live Camera ("Snap &amp; Queue Next")
-        </button>
-        <button class="mode-tab" data-mode="multi_upload" id="tabMultiUpload">
-          📁 Multi-Photo Batch Picker (10–50 photos)
-        </button>
-        <button class="mode-tab" data-mode="sample" id="tabSample">
-          🗂️ Benchmark Samples Quick Batch
-        </button>
-      </div>
-
-      <!-- PANE 1: Continuous Live Shutter Camera -->
-      <div id="paneCamera" class="capture-pane">
-        <div class="camera-container">
-          <video id="cameraVideo" autoplay playsinline muted></video>
-          <div id="cameraPlaceholder" class="camera-placeholder">
-            <div style="font-size:3rem;margin-bottom:12px;">📱</div>
-            <h3>Smartphone Continuous Shutter Scanner</h3>
-            <p>Activate camera to rapidly snap Page 1 booklets one after another.</p>
-            <button id="btnStartCam" class="btn btn-primary" style="margin-top:14px;">
-              ⚡ Activate Live Camera Viewfinder
-            </button>
-          </div>
-          <div class="camera-guide-overlay" id="cameraGuideOverlay" style="display:none;">
-            <div class="guide-box-header">ALIGN USN &amp; CIE TABLE IN FRAME</div>
-            <div class="guide-grid-wireframe"></div>
-            <div class="guide-box-footer">PAGE 1 ONLY • AUTO-SEGMENTED</div>
-          </div>
-        </div>
-
-        <div class="shutter-action-bar">
-          <button id="btnSnapAndQueue" class="btn btn-emerald btn-shutter-main" disabled>
-            ⚡ Snap &amp; Queue Next Booklet (#<span id="nextBookletNum">1</span>)
-          </button>
-          <button id="btnFlipCam" class="btn btn-outline" title="Flip Front/Rear Camera">
-            🔄 Flip
-          </button>
-          <button id="btnStopCam" class="btn btn-outline" style="display:none;">
-            ⏹ Pause
-          </button>
-        </div>
-      </div>
-
-      <!-- PANE 2: Native Smartphone Multi-Photo Batch Picker -->
-      <div id="paneMultiUpload" class="capture-pane" style="display:none;">
-        <div class="multi-upload-dropzone" id="dropzoneContainer">
-          <input
-            id="batchFileInput"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            multiple
-            style="display:none;"
-          />
-          <div class="dropzone-content" onclick="document.getElementById('batchFileInput').click()">
-            <div style="font-size:3.2rem;margin-bottom:10px;">📸</div>
-            <h3>Tap to Choose or Shoot Batch of Marksheet Photos</h3>
-            <p>Select 5, 10, 20, or 50 booklet photos at once from your smartphone camera roll or storage.</p>
-            <button type="button" class="btn btn-primary" style="margin-top:14px;pointer-events:none;">
-              📂 Browse &amp; Enqueue Multiple Photos
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- PANE 3: Benchmark Samples Quick Batch -->
-      <div id="paneSample" class="capture-pane" style="display:none;">
-        <div class="sample-batch-box">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
-            <div>
-              <h4 style="font-size:0.95rem;font-weight:700;">Verified MITE Benchmark Booklet Dataset (`data/raw/`)</h4>
-              <p style="font-size:0.8rem;color:#94a3b8;">Instantly enqueue verified sample booklets to test multi-subject batch routing.</p>
-            </div>
-            <div style="display:flex;gap:8px;">
-              <button id="btnQueueSampleBatch5" class="btn btn-outline" style="font-size:0.8rem;">
-                ⚡ Enqueue Next 5 Samples
-              </button>
-              <button id="btnQueueSampleBatch10" class="btn btn-outline" style="font-size:0.8rem;">
-                ⚡ Enqueue Next 10 Samples
-              </button>
-            </div>
-          </div>
-          <div style="display:flex;gap:10px;align-items:center;">
-            <select id="singleSampleSelect" class="input-field" style="flex:1;">
-              <option value="">-- Choose individual benchmark sample --</option>
-            </select>
-            <button id="btnQueueSingleSample" class="btn btn-primary" style="white-space:nowrap;">
-              + Queue Sample
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 3: Live Asynchronous Upload & Processing Queue -->
-    <section class="section-card">
-      <div class="section-header-flex">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <h2 class="section-title">☁️ Live Mobile Upload &amp; Processing Queue</h2>
-          <div class="queue-status-chips">
-            <span class="chip-queue" id="badgeQueued">⏳ Queued: 0</span>
-            <span class="chip-processing" id="badgeProcessing">⚡ Processing: 0</span>
-            <span class="chip-done" id="badgeCompleted">✅ Completed: 0</span>
-          </div>
-        </div>
-        <div>
-          <button id="btnClearCompletedQueue" class="btn btn-outline" style="font-size:0.78rem;padding:6px 12px;">
-            ✕ Clear Completed Cards
-          </button>
-        </div>
-      </div>
-
-      <!-- Empty Queue Placeholder -->
-      <div id="queueEmptyNotice" class="queue-empty-notice">
-        <span>📸 Snapped booklets will appear here and process in the background. Camera remains open!</span>
-      </div>
-
-      <!-- Queue Cards Container -->
-      <div id="queueCardsContainer" class="queue-grid"></div>
-    </section>
-
-    <!-- SECTION 4: Subject-Wise Ledger & Student Records -->
-    <section class="section-card">
-      <div class="section-header-flex" style="flex-wrap:wrap;gap:14px;">
-        <div>
-          <h2 class="section-title">📚 Digitized Student Booklets Ledger</h2>
-          <p class="section-subtitle">
-            Deduplicated by (USN, Course_Code) and sorted in ascending order by USN (`4MT24MC001` → `4MT24MC199`).
-          </p>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <!-- Subject Filter Tabs -->
-          <div class="ledger-filter-tabs" id="ledgerFilterTabs">
-            <button class="filter-tab active" data-filter="ALL">All Subjects</button>
-            <button class="filter-tab" data-filter="24MCPC522">24MCPC522</button>
-            <button class="filter-tab" data-filter="24MCPC517">24MCPC517</button>
-            <button class="filter-tab" data-filter="24MCPC521">24MCPC521</button>
-          </div>
-          <!-- Search Box -->
-          <input
-            id="ledgerSearch"
-            type="text"
-            placeholder="Search USN, Course, Status..."
-            class="input-field"
-            style="width:230px;"
-          />
-        </div>
-      </div>
-
-      <div class="ledger-table-wrapper">
-        <table class="ledger-table">
-          <thead>
-            <tr>
-              <th>Scan</th>
-              <th>Student USN</th>
-              <th>Course Code</th>
-              <th>Test 1 (15)</th>
-              <th>Test 2 (15)</th>
-              <th>ABA (10)</th>
-              <th>Theory (40)</th>
-              <th>Viva (5)</th>
-              <th>Lab (5)</th>
-              <th>Pract (10)</th>
-              <th>Total CIE (50)</th>
-              <th>Validation Status</th>
-              <th>Z3 Audit Overrides</th>
-              <th>Timestamp</th>
-            </tr>
-          </thead>
-          <tbody id="ledgerTableBody">
-            <tr>
-              <td colspan="14" style="text-align:center;padding:28px;color:#94a3b8;">
-                Loading digitized records...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
 
   </main>
 
-  <!-- Sticky Mobile Shutter Floating Dock (for smartphone thumbs) -->
-  <div class="mobile-shutter-dock" id="mobileShutterDock">
-    <button id="btnDockShutter" class="btn btn-emerald btn-dock-shutter" disabled>
-      📸 Snap &amp; Queue Next Booklet (#<span id="dockBookletNum">1</span>)
-    </button>
-  </div>
-
-  <!-- Full Image Preview Lightbox Modal -->
-  <div id="imageModal" class="modal-backdrop">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div id="modalCaption" class="modal-caption">Scan Preview</div>
-        <button id="btnCloseModal" class="btn btn-outline" style="padding:4px 10px;font-size:0.8rem;">✕ Close</button>
-      </div>
-      <div class="modal-image-wrapper">
-        <img id="modalImg" src="" alt="Full Booklet Scan" />
-      </div>
+  <!-- Simple Academic Footer -->
+  <footer class="text-center py-4 small text-muted border-top bg-white mt-auto">
+    <div class="container">
+      &copy; 2026 Mangalore Institute of Technology &amp; Engineering (MITE). Department of Master of Computer Applications.
     </div>
-  </div>
+  </footer>
 
-  <script src="/static/app.js"></script>
+  <!-- Client-side Logic -->
+  <script>
+    let selectedFiles = [];
+
+    const fileInput = document.getElementById('fileInput');
+    const folderInput = document.getElementById('folderInput');
+    const fileSelectionText = document.getElementById('fileSelectionText');
+    const btnExtract = document.getElementById('btnExtract');
+    const subjectHint = document.getElementById('subjectHint');
+
+    const progressSection = document.getElementById('progressSection');
+    const progressText = document.getElementById('progressText');
+    const progressPctLabel = document.getElementById('progressPctLabel');
+    const progressBar = document.getElementById('progressBar');
+
+    const completionSection = document.getElementById('completionSection');
+    const completionText = document.getElementById('completionText');
+
+    function handleFileSelection(files) {
+      const validExts = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff'];
+      const filtered = Array.from(files).filter(f => {
+        const name = f.name.toLowerCase();
+        // Automatically skip Page-2 images
+        if (name.includes('_p2')) return false;
+        const ext = '.' + name.split('.').pop();
+        return validExts.includes(ext);
+      });
+
+      selectedFiles = filtered;
+      if (selectedFiles.length > 0) {
+        fileSelectionText.textContent = `${selectedFiles.length} Page-1 image(s) selected and ready for extraction.`;
+        fileSelectionText.className = "small text-success fw-semibold";
+        btnExtract.disabled = false;
+        // Reset progress and completion states for new selection
+        progressSection.classList.add('d-none');
+        completionSection.classList.add('d-none');
+        progressBar.style.width = '0%';
+        progressBar.style.backgroundColor = '#1e3a8a';
+      } else {
+        fileSelectionText.textContent = "No valid Page-1 images selected.";
+        fileSelectionText.className = "small text-muted";
+        btnExtract.disabled = true;
+      }
+    }
+
+    fileInput.addEventListener('change', (e) => handleFileSelection(e.target.files));
+    folderInput.addEventListener('change', (e) => handleFileSelection(e.target.files));
+
+    btnExtract.addEventListener('click', async () => {
+      const total = selectedFiles.length;
+      if (total === 0) return;
+
+      btnExtract.disabled = true;
+      completionSection.classList.add('d-none');
+      progressSection.classList.remove('d-none');
+      progressBar.style.width = '0%';
+      progressBar.style.backgroundColor = '#1e3a8a';
+      progressPctLabel.textContent = '0%';
+      progressText.textContent = `Processing booklet 1 of ${total} (0%)...`;
+
+      let processedCount = 0;
+      let hasError = false;
+
+      for (let i = 0; i < total; i++) {
+        const file = selectedFiles[i];
+        const currentPct = Math.round((i / total) * 100);
+        progressText.textContent = `Processing booklet ${i + 1} of ${total} (${currentPct}%)...`;
+        progressBar.style.width = `${currentPct}%`;
+        progressPctLabel.textContent = `${currentPct}%`;
+
+        const formData = new FormData();
+        formData.append('files', file);
+        formData.append('subject_hint', subjectHint.value);
+        formData.append('is_first', i === 0 ? 'true' : 'false');
+        formData.append('is_last', i === total - 1 ? 'true' : 'false');
+
+        try {
+          const response = await fetch('/api/upload-batch', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Extraction failed on booklet ' + file.name);
+          }
+
+          const resData = await response.json();
+          processedCount++;
+          const donePct = Math.round(((i + 1) / total) * 100);
+          progressBar.style.width = `${donePct}%`;
+          progressPctLabel.textContent = `${donePct}%`;
+        } catch (err) {
+          alert(`Error processing ${file.name}: ` + err.message);
+          progressText.textContent = `Error encountered on booklet ${i + 1}. Stopped.`;
+          hasError = true;
+          break;
+        }
+      }
+
+      btnExtract.disabled = false;
+
+      if (!hasError && processedCount > 0) {
+        progressText.textContent = `Completed: Successfully processed ${processedCount} booklet(s).`;
+        progressBar.style.width = '100%';
+        progressBar.style.backgroundColor = '#198754';
+        progressPctLabel.textContent = '100%';
+        completionText.textContent = `Completed: Successfully processed ${processedCount} booklet(s). Your Excel file is ready.`;
+        completionSection.classList.remove('d-none');
+        completionSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  </script>
 </body>
 </html>
